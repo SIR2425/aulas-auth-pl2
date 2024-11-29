@@ -45,6 +45,7 @@ const users = {
     uuuuu : '$2a$10$KxDsfguJzhJp6OF0Tdl3euCbIQ2qPlGcSQ4VQXV2tBqgIFgQPidZe', // uuuuu
 }
 
+
 loggedUsers = new Set();
 
 app.use(express.static('public'));
@@ -66,7 +67,8 @@ app.get('/', (req, res) => {
 app.post('/login', limiter, async (req, res) => {
     username = req.body.username;
     password = req.body.password;
-    console.log('u:', username, 'p:',password);
+    color = req.body.color;
+    console.log('u:', username, 'p:',password, 'c:', color);
     if (!username || !password) {
         res.status('401');
         res.redirect('/login.html');
@@ -81,7 +83,12 @@ app.post('/login', limiter, async (req, res) => {
     const match = await bcrypt.compare(password,users[username]);
     console.log('match:', match);
     if(match){
-        loggedUsers.add(username);
+
+        // loggedUsers.add(username);
+
+        req.session.username = username;
+        req.session.color = color;
+
         console.log('Logged Users:', loggedUsers);
         res.cookie('username', username, { httpOnly: true });
         res.send('Login successful!');
@@ -94,12 +101,10 @@ app.post('/login', limiter, async (req, res) => {
 
 app.get('/protected', (req, res) => {
     try {
-        console.log('Cookie:', req.cookies);
-        const username = req.cookies.username;
-        console.log('Cookie:', req.cookies);
-        if(loggedUsers.has(username)){
-            res.send(`Olá. Informação Top Secret - Tu és o : ${req.cookies.username}`);
+        if(req.session.username) {
+            res.send(`<body style='background-color:${req.session.color}'>Olá. Informação Top Secret - Tu és o : ${req.cookies.username}</body>`);
         } else {
+            res.status(401);
             res.redirect('/login.html');
         }
     } catch {
@@ -109,11 +114,9 @@ app.get('/protected', (req, res) => {
     });
 
 app.get('/logout', (req, res) => {
-    res.clearCookie('username');
-    loggedUsers.delete(req.cookies.username);
+    req.session.destroy();
     res.send('Logout successful!');
 });
-
 
 const port = 3000;
 app.listen(port, () => console.log('listening on port ' + port));
