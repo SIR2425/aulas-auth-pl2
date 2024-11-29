@@ -2,15 +2,16 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 
 const rateLimit = require('express-rate-limit');
-
 const bcrypt = require('bcryptjs');
+
+const session = require('express-session');
+
+
 
 /*
 bcrypt.hash(myPlaintextPassword, saltRounds, function(err, hash) {
     // Store hash in your password DB.
 });
-
-
 
 
 // Load hash from your password DB.
@@ -49,6 +50,14 @@ loggedUsers = new Set();
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended : true}));
 app.use(cookieParser());
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'default_secret', // Secret used to sign the session ID cookie
+    resave: false, // Prevents saving session if it wasn't modified
+    saveUninitialized: false, // Prevents creating a session until something is stored
+    cookie: { secure: false, httpOnly: true } // set secure true if https
+  }));
+
 
 app.get('/', (req, res) => {
     res.send('Hello, World!');
